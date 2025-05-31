@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xquant.example.app_service.mapper.MenuMapper">
+
+    <select id="listAll" resultType="com.xquant.example.app_service.domain.entity.Menu">
+        select * from t_menu where status = 1
+    </select>
+
+    <select id="listAllPermissionMenu" resultType="java.lang.String">
+        select tp.permission_value from t_permission tp
+        left join t_role tr on tr.role_code = tp.role_code
+        where tr.user_account = #{userAccount} and tp.permission_type = '1';
+    </select>
+
+</mapper>

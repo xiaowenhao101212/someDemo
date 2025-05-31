@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xquant.example.app_service.mapper.AuditTaskMapper">
+
+
+    <select id="list"
+            parameterType="com.xquant.example.app_service.domain.dto.QueryAuditTaskDTO"
+            resultType="com.xquant.example.app_service.domain.entity.AuditTask">
+        select * from t_audit_task t
+        <where>
+            <if test="aBegdate != null"></if>
+            <if test="aEnddate != null"></if>
+            <if test="aDataType != null and aDataType != ''"></if>
+            <if test="aGroupCode != null and aGroupCode != ''"></if>
+        </where>
+    </select>
+
+</mapper>
