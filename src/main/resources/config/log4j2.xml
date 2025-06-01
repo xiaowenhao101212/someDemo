@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <Properties>
+        <Property name="project-name" value="app-service"/>
+        <Property name="log-path" value="${env:LOG_HOME:-./log}/${project-name}"/>
+        <Property name="log_pattern"
+                  value="%d{yyyy-MM-dd HH:mm:ss.SSS} [JAVA] [${hostName}] [${project-name}] [%-5level] [%t] [%X{traceId}] [%c{1}] - %msg%n"/>
+    </Properties>
+    <Appenders>
+        <RollingFile name="RollingFile"
+                     fileName="${log-path}/${project-name}.log"
+                     filePattern="${log-path}/%d{yyyy-MM}/${project-name}-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${log_pattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="100">
+                <Delete basePath="${log-path}" maxDepth="2">
+                    <IfFileName glob="*/${project-name}-*.log.gz"/>
+                    <!-- 最多保存15天 -->
+                    <IfLastModified age="15d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+        <Console name="Console" target="SYSTEM_OUT"
+                 ignoreExceptions="false">
+            <PatternLayout
+                    pattern="${log_pattern}"/>
+        </Console>
+
+    </Appenders>
+    <Loggers>
+        <Root level="INFO" includeLocation="true">
+            <AppenderRef ref="RollingFile"/>
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</configuration>
