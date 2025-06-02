@@ -2,17 +2,45 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xquant.example.appservice.mapper.AuditTaskMapper">
 
+    <update id="lock">
+        update t_audit_task set locked = '1' where id = #{taskId} and locked = '0'
+    </update>
+
+    <update id="unlock">
+        update t_audit_task set locked = '0' where id = #{taskId} and locked = '1'
+    </update>
+
+    <update id="update" parameterType="com.xquant.example.appservice.domain.entity.AuditTask">
+        update t_audit_task
+        <set>
+            status = #{status},
+            <if test='null != approver'>
+                approver = #{approver},
+                approval_time = sysdate,
+            </if>
+            <if test='null != remark'>remark = #{remark},</if>
+            update_time = sysdate
+        </set>
+        where id = #{id}
+    </update>
+
 
     <select id="list"
             parameterType="com.xquant.example.appservice.domain.dto.QueryAuditTaskDTO"
             resultType="com.xquant.example.appservice.domain.entity.AuditTask">
         select * from t_audit_task t
-        <where>
-            <if test="aBegdate != null"></if>
-            <if test="aEnddate != null"></if>
-            <if test="aDataType != null and aDataType != ''"></if>
-            <if test="aGroupCode != null and aGroupCode != ''"></if>
-        </where>
+        <!--        <where>-->
+        <!--            <if test="aBegdate != null"></if>-->
+        <!--            <if test="aEnddate != null"></if>-->
+        <!--            <if test="aDataType != null and aDataType != ''"></if>-->
+        <!--            <if test="aGroupCode != null and aGroupCode != ''"></if>-->
+        <!--        </where>-->
+    </select>
+
+    <select id="get"
+            parameterType="long"
+            resultType="com.xquant.example.appservice.domain.entity.AuditTask">
+        select * from t_audit_task t where id = #{taskId}
     </select>
 
 </mapper>

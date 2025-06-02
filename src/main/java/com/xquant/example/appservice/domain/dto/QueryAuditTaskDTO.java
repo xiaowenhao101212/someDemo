@@ -6,7 +6,6 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import javax.validation.constraints.NotBlank;
 import java.util.Date;
 
 /**
@@ -14,8 +13,10 @@ import java.util.Date;
  */
 @Data
 @ApiModel("查询审批任务条件")
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class QueryAuditTaskDTO extends PageParam{
+
+    private static final long serialVersionUID = 1L;
 
     @ApiModelProperty(value = "起始日期",  example = "2025-05-31")
     private Date aBegdate;

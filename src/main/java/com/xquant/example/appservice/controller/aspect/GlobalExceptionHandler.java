@@ -8,6 +8,7 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -73,6 +74,7 @@ public class GlobalExceptionHandler {
 
     /**
      * 非法数据异常
+     *
      * @param e
      * @return
      */
@@ -82,5 +84,10 @@ public class GlobalExceptionHandler {
             log.error("数据验证出现异常", e);
         }
         return ResponseModel.fail(ResponseStatusEnum.SYSTEM_EXCEPTION.getCode(), e.getMessage());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseModel<?> handleMissingParams(MissingServletRequestParameterException e) {
+        return ResponseModel.fail(ResponseStatusEnum.NULL_PARAMETER_EXCEPTION.getCode(), e.getMessage());
     }
 }

@@ -16,6 +16,11 @@ public enum ResponseStatusEnum {
     PARAMETER_EXCEPTION(20, "参数错误"),
 
     /**
+     * 参数丢失
+     */
+    NULL_PARAMETER_EXCEPTION(30, "参数丢失"),
+
+    /**
      * 系统异常
      */
     SYSTEM_EXCEPTION(10, "系统异常");

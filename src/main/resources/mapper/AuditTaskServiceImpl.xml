@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xquant.example.appservice.mapper.AuditTaskLogMapper">
+
+    <resultMap id="AuditTaskLogResult" type="com.xquant.example.appservice.domain.entity.AuditTaskLog">
+        <id column="log_id" property="logId"/>
+        <result column="task_id" property="taskId"/>
+        <result column="auditor" property="auditor"/>
+        <result column="audit_time" property="auditTime"/>
+        <result column="current_node" property="currentNode"/>
+        <result column="current_node_name" property="currentNodeName"/>
+        <result column="previous_node" property="previousNode"/>
+        <result column="next_node" property="nextNode"/>
+        <result column="operation_type" property="operationType"/>
+        <result column="remark" property="remark"/>
+    </resultMap>
+
+    <select id="getByTaskId" resultMap="AuditTaskLogResult">
+        SELECT *
+        FROM t_audit_task_log
+        WHERE task_id = #{taskId}
+    </select>
+
+    <select id="list" resultMap="AuditTaskLogResult">
+        SELECT *
+        FROM t_audit_task_log
+        <where>
+            <if test="taskId != null">AND task_id = #{taskId}</if>
+            <if test="auditor != null and auditor != ''">AND auditor LIKE CONCAT('%', #{auditor}, '%')</if>
+            <if test="startTime != null">AND audit_time >= #{startTime}</if>
+            <if test="endTime != null">AND audit_time <= #{endTime}</if>
+            <if test="operationType != null">AND operation_type = #{operationType}</if>
+        </where>
+    </select>
+
+    <insert id="insert">
+        INSERT INTO t_audit_task_log (
+            task_id,
+            auditor,
+            audit_time,
+            current_node,
+            current_node_name,
+            previous_node,
+            next_node,
+            operation_type,
+            remark
+        ) VALUES (
+            #{taskId},
+            #{auditor},
+            #{auditTime},
+            #{currentNode},
+            #{currentNodeName},
+            #{previousNode},
+            #{nextNode},
+            #{operationType},
+            #{remark}
+        )
+    </insert>
+</mapper>

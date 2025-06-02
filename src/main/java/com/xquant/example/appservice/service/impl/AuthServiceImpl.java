@@ -59,6 +59,7 @@ public class AuthServiceImpl implements AuthService {
         // 构建出参对象
         UserLoginVO vo = new UserLoginVO();
         vo.setUserName(dbUser.getUserName());
+        vo.setUserCode(userLoginDTO.getAUserCode());
         // 用一个随机的uuid 代替认证token
         vo.setAuthToken(UUID.fastUUID().toString(true));
 
@@ -80,7 +81,7 @@ public class AuthServiceImpl implements AuthService {
         // 用户信息缓存
         RMapCache<String, UserLoginVO> userCache = redissonClient.getMapCache(CacheEnum.USER_SESSION.getCode());
         userCache.put(vo.getAuthToken(), vo, 30, TimeUnit.MINUTES);
-        log.info("用户[{}]认证信息缓存key:[{}]",vo.getUserName(),vo.getAuthToken());
+        log.info("用户[{}]认证信息缓存key:[{}]", vo.getUserName(), vo.getAuthToken());
         return vo;
     }
 }

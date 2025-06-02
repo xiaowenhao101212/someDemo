@@ -10,4 +10,12 @@ import java.util.List;
 public interface AuditTaskMapper {
 
     List<AuditTask> list(QueryAuditTaskDTO queryDTO);
+
+    AuditTask get(Long taskId);
+
+    int lock(Long taskId);
+
+    int unlock(Long taskId);
+
+    int update(AuditTask auditTask);
 }

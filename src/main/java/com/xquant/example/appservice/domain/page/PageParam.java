@@ -9,6 +9,9 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
+/**
+ * @author 05429
+ */
 @Data
 @ApiModel("分页参数")
 public class PageParam implements Serializable {
@@ -18,7 +21,7 @@ public class PageParam implements Serializable {
     @ApiModelProperty(value = "页码，从 1 开始", required = true, example = "1")
     @NotNull(message = "页码不能为空")
     @Min(value = 1, message = "页码最小值为 1")
-    private Integer pageNo;
+    private Integer pageNum;
 
     @ApiModelProperty(value = "每页条数，最大值为 100", required = true, example = "10")
     @NotNull(message = "每页条数不能为空")
