@@ -7,12 +7,14 @@ import com.github.pagehelper.Page;
 import com.github.pagehelper.page.PageMethod;
 import com.xquant.example.appservice.domain.dto.AuditTaskDTO;
 import com.xquant.example.appservice.domain.dto.AuditTaskLogDTO;
+import com.xquant.example.appservice.domain.dto.BizVerificationDTO;
 import com.xquant.example.appservice.domain.dto.QueryAuditTaskDTO;
 import com.xquant.example.appservice.domain.entity.AuditTask;
 import com.xquant.example.appservice.domain.entity.AuditTaskLog;
 import com.xquant.example.appservice.domain.page.PageVO;
 import com.xquant.example.appservice.domain.vo.AuditTaskLogVO;
 import com.xquant.example.appservice.domain.vo.AuditTaskVO;
+import com.xquant.example.appservice.domain.vo.BizVerificationVO;
 import com.xquant.example.appservice.domain.vo.UserLoginVO;
 import com.xquant.example.appservice.enums.AuditCommitType;
 import com.xquant.example.appservice.enums.AuditStatus;
@@ -26,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -43,7 +46,7 @@ public class AuditTaskServiceImpl implements AuditTaskService {
 
     @Override
     public PageVO<AuditTaskVO> pageAuditTask(QueryAuditTaskDTO queryAuditTaskDTO) {
-        if(Objects.nonNull(queryAuditTaskDTO.getAEnddate())){
+        if (Objects.nonNull(queryAuditTaskDTO.getAEnddate())) {
             // 将结束日期设置为当天的23:59:59
             queryAuditTaskDTO.setAEnddate(DateUtil.endOfDay(queryAuditTaskDTO.getAEnddate()));
         }
@@ -123,12 +126,44 @@ public class AuditTaskServiceImpl implements AuditTaskService {
 
     @Override
     public List<AuditTaskLogVO> listLog(AuditTaskLogDTO auditTaskLogDTO) {
-        if(Objects.nonNull(auditTaskLogDTO.getEndTime())){
+        if (Objects.nonNull(auditTaskLogDTO.getEndTime())) {
             // 将结束日期设置为当天的23:59:59
             auditTaskLogDTO.setEndTime(DateUtil.endOfDay(auditTaskLogDTO.getEndTime()));
         }
         List<AuditTaskLog> list = auditTaskLogMapper.list(auditTaskLogDTO);
         return list.stream().map(v -> BeanUtil.copyProperties(v, AuditTaskLogVO.class)).collect(Collectors.toList());
+    }
+
+    @Override
+    public BizVerificationVO bizVerification(BizVerificationDTO bizVerificationDTO) {
+
+        // 阈值 （0,50000]
+        AuditTask auditTask = auditTaskMapper.get(bizVerificationDTO.getTaskId());
+        if (Objects.isNull(auditTask)) {
+            throw new BusinessException(-1, "数据不存在");
+        }
+        if (StrUtil.isBlank(auditTask.getTransactionAmount())) {
+            return BizVerificationVO.builder()
+                    .verificationType(bizVerificationDTO.getVerificationTypes())
+                    .verificationResult("Y")
+                    .msg("通过")
+                    .build();
+        }
+        BigDecimal  transactionAmount = new BigDecimal(auditTask.getTransactionAmount());
+        if (transactionAmount.compareTo(new BigDecimal("50000")) > 0) {
+            return BizVerificationVO.builder()
+                    .verificationType(bizVerificationDTO.getVerificationTypes())
+                    .verificationResult("N")
+                    .msg("交易金额超过阈值")
+                    .build();
+        }
+
+        return BizVerificationVO.builder()
+                .verificationType(bizVerificationDTO.getVerificationTypes())
+                .verificationResult("Y")
+                .msg("通过")
+                .build();
+
     }
 
 }

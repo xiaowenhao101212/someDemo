@@ -2,10 +2,12 @@ package com.xquant.example.appservice.service;
 
 import com.xquant.example.appservice.domain.dto.AuditTaskDTO;
 import com.xquant.example.appservice.domain.dto.AuditTaskLogDTO;
+import com.xquant.example.appservice.domain.dto.BizVerificationDTO;
 import com.xquant.example.appservice.domain.dto.QueryAuditTaskDTO;
 import com.xquant.example.appservice.domain.page.PageVO;
 import com.xquant.example.appservice.domain.vo.AuditTaskLogVO;
 import com.xquant.example.appservice.domain.vo.AuditTaskVO;
+import com.xquant.example.appservice.domain.vo.BizVerificationVO;
 import org.apache.ibatis.annotations.Param;
 
 import javax.validation.Valid;
@@ -37,4 +39,6 @@ public interface AuditTaskService {
     void auditTask(AuditTaskDTO auditTaskDTO);
 
     List<AuditTaskLogVO> listLog(@Valid AuditTaskLogDTO auditTaskLogDTO);
+
+    BizVerificationVO bizVerification(@Valid BizVerificationDTO bizVerificationDTO);
 }

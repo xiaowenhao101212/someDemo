@@ -4,10 +4,12 @@ package com.xquant.example.appservice.controller;
 import com.xquant.example.appservice.controller.response.ResponseModel;
 import com.xquant.example.appservice.domain.dto.AuditTaskDTO;
 import com.xquant.example.appservice.domain.dto.AuditTaskLogDTO;
+import com.xquant.example.appservice.domain.dto.BizVerificationDTO;
 import com.xquant.example.appservice.domain.dto.QueryAuditTaskDTO;
 import com.xquant.example.appservice.domain.page.PageVO;
 import com.xquant.example.appservice.domain.vo.AuditTaskLogVO;
 import com.xquant.example.appservice.domain.vo.AuditTaskVO;
+import com.xquant.example.appservice.domain.vo.BizVerificationVO;
 import com.xquant.example.appservice.enums.AuditCommitType;
 import com.xquant.example.appservice.service.AuditTaskService;
 import io.swagger.annotations.Api;
@@ -66,5 +68,12 @@ public class AuditTaskController {
     public ResponseModel<List<AuditTaskLogVO>> listLog(@Valid AuditTaskLogDTO auditTaskLogDTO) {
 
         return ResponseModel.ok(auditTaskService.listLog(auditTaskLogDTO));
+    }
+
+    @ApiOperation("业务验证")
+    @GetMapping("/bizVerification")
+    public ResponseModel<BizVerificationVO> bizVerification(@Valid BizVerificationDTO bizVerificationDTO) {
+
+        return ResponseModel.ok(auditTaskService.bizVerification(bizVerificationDTO));
     }
 }

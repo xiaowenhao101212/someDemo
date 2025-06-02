@@ -51,5 +51,7 @@ public class AuditTask implements Serializable {
     private Date approvalTime;
     // 备注
     private String remark;
+    // 交易金额
+    private String transactionAmount;
 
 }
