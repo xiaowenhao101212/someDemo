@@ -16,10 +16,10 @@
             status = #{status},
             <if test='null != approver'>
                 approver = #{approver},
-                approval_time = sysdate,
+                approval_time = sysdate(),
             </if>
             <if test='null != remark'>remark = #{remark},</if>
-            update_time = sysdate
+            update_time = sysdate()
         </set>
         where id = #{id}
     </update>
@@ -29,12 +29,12 @@
             parameterType="com.xquant.example.appservice.domain.dto.QueryAuditTaskDTO"
             resultType="com.xquant.example.appservice.domain.entity.AuditTask">
         select * from t_audit_task t
-        <!--        <where>-->
-        <!--            <if test="aBegdate != null"></if>-->
-        <!--            <if test="aEnddate != null"></if>-->
-        <!--            <if test="aDataType != null and aDataType != ''"></if>-->
-        <!--            <if test="aGroupCode != null and aGroupCode != ''"></if>-->
-        <!--        </where>-->
+        <where>
+            <if test="aBegdate != null"> and create_time <![CDATA[ >= ]]> #{aBegdate}</if>
+            <if test="aEnddate != null">and create_time <![CDATA[ <= ]]> #{aEnddate}</if>
+            <if test="aDataType != null and aDataType != ''">and status = #{aDataType}</if>
+            <!--            <if test="aGroupCode != null and aGroupCode != ''"></if>-->
+        </where>
     </select>
 
     <select id="get"

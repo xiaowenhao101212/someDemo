@@ -1,13 +1,17 @@
 package com.xquant.example.appservice.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.StrUtil;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.page.PageMethod;
 import com.xquant.example.appservice.domain.dto.AuditTaskDTO;
+import com.xquant.example.appservice.domain.dto.AuditTaskLogDTO;
 import com.xquant.example.appservice.domain.dto.QueryAuditTaskDTO;
 import com.xquant.example.appservice.domain.entity.AuditTask;
 import com.xquant.example.appservice.domain.entity.AuditTaskLog;
 import com.xquant.example.appservice.domain.page.PageVO;
+import com.xquant.example.appservice.domain.vo.AuditTaskLogVO;
 import com.xquant.example.appservice.domain.vo.AuditTaskVO;
 import com.xquant.example.appservice.domain.vo.UserLoginVO;
 import com.xquant.example.appservice.enums.AuditCommitType;
@@ -39,6 +43,10 @@ public class AuditTaskServiceImpl implements AuditTaskService {
 
     @Override
     public PageVO<AuditTaskVO> pageAuditTask(QueryAuditTaskDTO queryAuditTaskDTO) {
+        if(Objects.nonNull(queryAuditTaskDTO.getAEnddate())){
+            // 将结束日期设置为当天的23:59:59
+            queryAuditTaskDTO.setAEnddate(DateUtil.endOfDay(queryAuditTaskDTO.getAEnddate()));
+        }
         try (Page<AuditTaskVO> pageVO = PageMethod.startPage(queryAuditTaskDTO.getPageNum(), queryAuditTaskDTO.getPageSize())) {
             List<AuditTask> dbAuditTasks = auditTaskMapper.list(queryAuditTaskDTO);
             // 转换为 VO 列表
@@ -88,6 +96,9 @@ public class AuditTaskServiceImpl implements AuditTaskService {
             } else if (AuditCommitType.ABORT.getValue().equals(auditTaskDTO.getOperationType())) {
                 auditTask.setStatus(AuditStatus.SIGNED.getCode());
             }
+            if (StrUtil.isNotBlank(auditTaskDTO.getRemark())) {
+                auditTask.setRemark(auditTaskDTO.getRemark());
+            }
             // 更新审核任务
             auditTaskMapper.update(auditTask);
 
@@ -108,6 +119,16 @@ public class AuditTaskServiceImpl implements AuditTaskService {
         } finally {
             auditTaskMapper.unlock(auditTaskDTO.getTaskId());
         }
+    }
+
+    @Override
+    public List<AuditTaskLogVO> listLog(AuditTaskLogDTO auditTaskLogDTO) {
+        if(Objects.nonNull(auditTaskLogDTO.getEndTime())){
+            // 将结束日期设置为当天的23:59:59
+            auditTaskLogDTO.setEndTime(DateUtil.endOfDay(auditTaskLogDTO.getEndTime()));
+        }
+        List<AuditTaskLog> list = auditTaskLogMapper.list(auditTaskLogDTO);
+        return list.stream().map(v -> BeanUtil.copyProperties(v, AuditTaskLogVO.class)).collect(Collectors.toList());
     }
 
 }

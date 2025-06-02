@@ -1,12 +1,15 @@
 package com.xquant.example.appservice.service;
 
 import com.xquant.example.appservice.domain.dto.AuditTaskDTO;
+import com.xquant.example.appservice.domain.dto.AuditTaskLogDTO;
 import com.xquant.example.appservice.domain.dto.QueryAuditTaskDTO;
 import com.xquant.example.appservice.domain.page.PageVO;
+import com.xquant.example.appservice.domain.vo.AuditTaskLogVO;
 import com.xquant.example.appservice.domain.vo.AuditTaskVO;
 import org.apache.ibatis.annotations.Param;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 审批任务接口
@@ -32,4 +35,6 @@ public interface AuditTaskService {
     AuditTaskVO get(Long taskId);
 
     void auditTask(AuditTaskDTO auditTaskDTO);
+
+    List<AuditTaskLogVO> listLog(@Valid AuditTaskLogDTO auditTaskLogDTO);
 }

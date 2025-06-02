@@ -3,8 +3,10 @@ package com.xquant.example.appservice.controller;
 
 import com.xquant.example.appservice.controller.response.ResponseModel;
 import com.xquant.example.appservice.domain.dto.AuditTaskDTO;
+import com.xquant.example.appservice.domain.dto.AuditTaskLogDTO;
 import com.xquant.example.appservice.domain.dto.QueryAuditTaskDTO;
 import com.xquant.example.appservice.domain.page.PageVO;
+import com.xquant.example.appservice.domain.vo.AuditTaskLogVO;
 import com.xquant.example.appservice.domain.vo.AuditTaskVO;
 import com.xquant.example.appservice.enums.AuditCommitType;
 import com.xquant.example.appservice.service.AuditTaskService;
@@ -16,7 +18,7 @@ import org.apache.commons.lang3.Validate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.Objects;
+import java.util.List;
 
 /**
  * @author 05429
@@ -59,4 +61,10 @@ public class AuditTaskController {
         return ResponseModel.ok();
     }
 
+    @ApiOperation("查询审批日志")
+    @GetMapping("/log/list")
+    public ResponseModel<List<AuditTaskLogVO>> listLog(@Valid AuditTaskLogDTO auditTaskLogDTO) {
+
+        return ResponseModel.ok(auditTaskService.listLog(auditTaskLogDTO));
+    }
 }

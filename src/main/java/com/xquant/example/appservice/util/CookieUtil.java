@@ -11,6 +11,7 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
@@ -23,6 +24,11 @@ public class CookieUtil {
 
     @Autowired
     private RedissonClient injectedRedissonClient;
+
+    @PostConstruct
+    public void init() {
+        redissonClient = injectedRedissonClient;
+    }
 
     /**
      * 从请求的Cookie中获取authToken参数值，并从Redis中获取用户信息

@@ -1,5 +1,6 @@
 package com.xquant.example.appservice.domain.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -24,6 +25,7 @@ public class AuditTaskLogVO implements Serializable {
     private String auditor;
 
     @ApiModelProperty("审核时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date auditTime;
 
     @ApiModelProperty("当前节点编码")

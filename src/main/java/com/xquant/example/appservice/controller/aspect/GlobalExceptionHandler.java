@@ -69,7 +69,7 @@ public class GlobalExceptionHandler {
             log.error("系统出现异常", e);
         }
 
-        return ResponseModel.fail(ResponseStatusEnum.SYSTEM_EXCEPTION.getCode(), "系统异常");
+        return ResponseModel.fail(ResponseStatusEnum.SYSTEM_EXCEPTION.getCode(), e.getMessage());
     }
 
     /**

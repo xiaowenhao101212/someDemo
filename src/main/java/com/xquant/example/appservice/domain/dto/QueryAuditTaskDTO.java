@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
 
@@ -18,10 +19,12 @@ public class QueryAuditTaskDTO extends PageParam{
 
     private static final long serialVersionUID = 1L;
 
-    @ApiModelProperty(value = "起始日期",  example = "2025-05-31")
+    @ApiModelProperty(value = "起始日期，格式 yyyy-MM-dd", example = "2025-05-31")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date aBegdate;
 
-    @ApiModelProperty(value = "结束日期",  example = "2025-05-31")
+    @ApiModelProperty(value = "结束日期，格式 yyyy-MM-dd", example = "2025-05-31")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date aEnddate;
 
     @ApiModelProperty(value = "数据类型",  example = "1")

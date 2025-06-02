@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xquant.example.appservice.mapper.AuditTaskLogMapper">
 
     <resultMap id="AuditTaskLogResult" type="com.xquant.example.appservice.domain.entity.AuditTaskLog">
@@ -23,14 +21,16 @@
         WHERE task_id = #{taskId}
     </select>
 
-    <select id="list" resultMap="AuditTaskLogResult">
+    <select id="list"
+            parameterType="com.xquant.example.appservice.domain.dto.AuditTaskLogDTO"
+            resultMap="AuditTaskLogResult">
         SELECT *
         FROM t_audit_task_log
         <where>
             <if test="taskId != null">AND task_id = #{taskId}</if>
             <if test="auditor != null and auditor != ''">AND auditor LIKE CONCAT('%', #{auditor}, '%')</if>
-            <if test="startTime != null">AND audit_time >= #{startTime}</if>
-            <if test="endTime != null">AND audit_time <= #{endTime}</if>
+            <if test="startTime != null">AND audit_time <![CDATA[ >= ]]> #{startTime}</if>
+            <if test="endTime != null">AND audit_time <![CDATA[ <= ]]> #{endTime}</if>
             <if test="operationType != null">AND operation_type = #{operationType}</if>
         </where>
     </select>
@@ -39,21 +39,13 @@
         INSERT INTO t_audit_task_log (
             task_id,
             auditor,
-            audit_time,
             current_node,
-            current_node_name,
-            previous_node,
-            next_node,
             operation_type,
             remark
         ) VALUES (
             #{taskId},
             #{auditor},
-            #{auditTime},
             #{currentNode},
-            #{currentNodeName},
-            #{previousNode},
-            #{nextNode},
             #{operationType},
             #{remark}
         )

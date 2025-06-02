@@ -1,5 +1,6 @@
 package com.xquant.example.appservice.domain.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -31,6 +32,7 @@ public class AuditTaskVO implements Serializable {
     private String transactionType;
     // 交易日期
     @ApiModelProperty(value = "交易日期")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date transactionDate;
     // 资金流向
     @ApiModelProperty(value = "资金流向")
@@ -55,9 +57,11 @@ public class AuditTaskVO implements Serializable {
     private String status;
     // 创建时间
     @ApiModelProperty(value = "创建时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createTime;
     // 更新时间
     @ApiModelProperty(value = "更新时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date updateTime;
     // 创建人
     @ApiModelProperty(value = "创建人")
@@ -67,6 +71,7 @@ public class AuditTaskVO implements Serializable {
     private String approver;
     // 审批时间
     @ApiModelProperty(value = "审批时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date approvalTime;
     // 备注
     @ApiModelProperty(value = "备注")

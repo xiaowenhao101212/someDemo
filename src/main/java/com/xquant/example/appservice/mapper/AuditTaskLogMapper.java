@@ -8,6 +8,8 @@ import java.util.List;
 
 /**
  * 审核任务日志数据访问接口
+ *
+ * @author 05429
  */
 @Mapper
 public interface AuditTaskLogMapper {
