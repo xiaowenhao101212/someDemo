@@ -1,6 +1,7 @@
 package com.xquant.example.appservice.controller;
 
 
+import com.xquant.example.appservice.annotation.PreventDuplicateClick;
 import com.xquant.example.appservice.controller.response.ResponseModel;
 import com.xquant.example.appservice.domain.dto.AuditTaskDTO;
 import com.xquant.example.appservice.domain.dto.AuditTaskLogDTO;
@@ -52,6 +53,7 @@ public class AuditTaskController {
 
     @ApiOperation("审批任务")
     @PostMapping("/auditTask")
+    @PreventDuplicateClick()
     public ResponseModel<Void> auditTask(@Valid @RequestBody AuditTaskDTO auditTaskDTO) {
         // 参数验证
         AuditCommitType auditCommitType = AuditCommitType.ofValue(auditTaskDTO.getOperationType());

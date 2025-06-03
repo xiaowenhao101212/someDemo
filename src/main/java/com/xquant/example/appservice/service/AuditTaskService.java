@@ -1,14 +1,9 @@
 package com.xquant.example.appservice.service;
 
-import com.xquant.example.appservice.domain.dto.AuditTaskDTO;
-import com.xquant.example.appservice.domain.dto.AuditTaskLogDTO;
-import com.xquant.example.appservice.domain.dto.BizVerificationDTO;
-import com.xquant.example.appservice.domain.dto.QueryAuditTaskDTO;
+import com.xquant.example.appservice.domain.dto.*;
+import com.xquant.example.appservice.domain.page.PageV2VO;
 import com.xquant.example.appservice.domain.page.PageVO;
-import com.xquant.example.appservice.domain.vo.AuditTaskLogVO;
-import com.xquant.example.appservice.domain.vo.AuditTaskVO;
-import com.xquant.example.appservice.domain.vo.BizVerificationVO;
-import org.apache.ibatis.annotations.Param;
+import com.xquant.example.appservice.domain.vo.*;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -41,4 +36,17 @@ public interface AuditTaskService {
     List<AuditTaskLogVO> listLog(@Valid AuditTaskLogDTO auditTaskLogDTO);
 
     BizVerificationVO bizVerification(@Valid BizVerificationDTO bizVerificationDTO);
+
+
+    PageV2VO<AuditTaskPageVO> mobileGetTaskNodeLstByPage(@Valid AuditTaskPageDTO queryDTO);
+
+    AuditTaskNodeVO mobileSingleTaskNodeTree(@Valid AuditTaskNodeDTO queryDTO);
+
+    List<AuditTaskLogV2VO> mobileSingleTraceLog(@Valid AuditTaskLogV2DTO queryDTO);
+
+    List<BizValidVO> mobileSingleLimitresult(@Valid BizValidDTO queryDTO);
+
+    void mobileApproveTaskByNodeIdBatch(@Valid ApprovedBatchDTO approvedBatchDTO);
+
+    List<TaskNodeGroupVO> mobileGetTaskNodeGroup(@Valid TaskNodeGroupDTO queryDTO);
 }

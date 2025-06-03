@@ -3,21 +3,23 @@ package com.xquant.example.appservice.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.MD5;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.page.PageMethod;
-import com.xquant.example.appservice.domain.dto.AuditTaskDTO;
-import com.xquant.example.appservice.domain.dto.AuditTaskLogDTO;
-import com.xquant.example.appservice.domain.dto.BizVerificationDTO;
-import com.xquant.example.appservice.domain.dto.QueryAuditTaskDTO;
+import com.jayway.jsonpath.JsonPath;
+import com.xquant.example.appservice.client.WebApiClient;
+import com.xquant.example.appservice.domain.dto.*;
 import com.xquant.example.appservice.domain.entity.AuditTask;
 import com.xquant.example.appservice.domain.entity.AuditTaskLog;
+import com.xquant.example.appservice.domain.page.PageV2VO;
 import com.xquant.example.appservice.domain.page.PageVO;
-import com.xquant.example.appservice.domain.vo.AuditTaskLogVO;
-import com.xquant.example.appservice.domain.vo.AuditTaskVO;
-import com.xquant.example.appservice.domain.vo.BizVerificationVO;
-import com.xquant.example.appservice.domain.vo.UserLoginVO;
+import com.xquant.example.appservice.domain.vo.*;
 import com.xquant.example.appservice.enums.AuditCommitType;
 import com.xquant.example.appservice.enums.AuditStatus;
+import com.xquant.example.appservice.enums.CacheEnum;
+import com.xquant.example.appservice.enums.WebApiEnum;
 import com.xquant.example.appservice.exceptions.BusinessException;
 import com.xquant.example.appservice.mapper.AuditTaskLogMapper;
 import com.xquant.example.appservice.mapper.AuditTaskMapper;
@@ -25,12 +27,16 @@ import com.xquant.example.appservice.service.AuditTaskService;
 import com.xquant.example.appservice.util.CookieUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RMapCache;
+import org.redisson.api.RedissonClient;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -43,6 +49,8 @@ public class AuditTaskServiceImpl implements AuditTaskService {
 
     private final AuditTaskMapper auditTaskMapper;
     private final AuditTaskLogMapper auditTaskLogMapper;
+    private final WebApiClient webApiClient;
+
 
     @Override
     public PageVO<AuditTaskVO> pageAuditTask(QueryAuditTaskDTO queryAuditTaskDTO) {
@@ -149,7 +157,7 @@ public class AuditTaskServiceImpl implements AuditTaskService {
                     .msg("通过")
                     .build();
         }
-        BigDecimal  transactionAmount = new BigDecimal(auditTask.getTransactionAmount());
+        BigDecimal transactionAmount = new BigDecimal(auditTask.getTransactionAmount());
         if (transactionAmount.compareTo(new BigDecimal("50000")) > 0) {
             return BizVerificationVO.builder()
                     .verificationType(bizVerificationDTO.getVerificationTypes())
@@ -164,6 +172,304 @@ public class AuditTaskServiceImpl implements AuditTaskService {
                 .msg("通过")
                 .build();
 
+    }
+
+    @Override
+    public PageV2VO<AuditTaskPageVO> mobileGetTaskNodeLstByPage(AuditTaskPageDTO queryDTO) {
+        // 获取用户代码
+        UserLoginVO userLoginVO = CookieUtil.getUserInfoFromCookie();
+        if (Objects.isNull(userLoginVO)) {
+            throw new BusinessException(-1, "用户登录过期");
+        }
+        // 检查缓存中是否存在数据
+        String cacheKey = String.format("user:%s:%s:%s:%s:%s:%s:%s",
+                userLoginVO.getAuthToken(),
+                queryDTO.getAPage(),
+                queryDTO.getATargetType(),
+                queryDTO.getABegdate(),
+                queryDTO.getAEnddate(),
+                queryDTO.getADataType(),
+                queryDTO.getAGroupCode());
+
+        cacheKey = MD5.create().digestHex16(cacheKey);
+
+        RMapCache<String, PageV2VO<AuditTaskPageVO>> pageCache = redissonClient.getMapCache(CacheEnum.AUDIT_TASK_PAGE.getCode());
+        PageV2VO<AuditTaskPageVO> cachePageDate = pageCache.get(cacheKey);
+        if (Objects.nonNull(cachePageDate)) {
+            return cachePageDate;
+        }
+
+        Map<String, Object> webApiPram = this.buildMobileGetTaskNodeLstByPageParam(queryDTO);
+        webApiPram.put("aUserCode", userLoginVO.getUserCode());
+
+
+        String responseStr = webApiClient.postApi(WebApiEnum.API_MOBILEGETTASKNODELSTBYPAGE.getEndPoint(), webApiPram);
+
+        List<AuditTaskPageVO> dataList = new ArrayList<>();
+
+        if (StrUtil.equals("0", JsonPath.read(responseStr, "$.Data.rt.RE.RM"))) {
+            return PageV2VO.of(1, 20, 0, 0, dataList, new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        }
+
+
+        List<Map<String, String>> columns = JsonPath.read(responseStr, "$.Data.rt.COLUMN.R");
+        List<Map<String, String>> groups = JsonPath.read(responseStr, "$.Data.rt.Group.R");
+        List<Map<String, String>> customGroups = JsonPath.read(responseStr, "$.Data.rt.CUSTOMGROUP.R");
+
+        // 总页数
+        int pages = Integer.parseInt(JsonPath.read(responseStr, "$.Data.rt.RE.TotalPage"));
+        // 查询页数，超过实际数据量
+        if (pages < queryDTO.getAPage()) {
+            return PageV2VO.of(queryDTO.getAPage(),
+                    20,
+                    Long.parseLong(JsonPath.read(responseStr, "$.Data.rt.RE.RM")),
+                    Integer.parseInt(JsonPath.read(responseStr, "$.Data.rt.RE.TotalPage")),
+                    new ArrayList<>(),
+                    columns.stream().map(this::mapToColumnInfo).collect(Collectors.toList()),
+                    groups.stream().map(this::mapToColumnInfo).collect(Collectors.toList()),
+                    customGroups.stream().map(this::mapToColumnInfo).collect(Collectors.toList()));
+        }
+
+        List<Map<String, String>> rowMaps = JsonPath.read(responseStr, "$.Data.rt.ROW");
+
+        dataList = rowMaps.stream().map(m -> {
+            AuditTaskPageVO rowInfo = new AuditTaskPageVO();
+            rowInfo.setTid(m.get("TID"));
+            rowInfo.setNid(m.get("NID"));
+            rowInfo.setGr(m.get("GR"));
+            rowInfo.setId(m.get("ID"));
+            rowInfo.setCcroleFlag(StrUtil.equals(m.get("ISCCROLE"), "True") ? "1" : "0");
+            rowInfo.setTy(m.get("TY"));
+            rowInfo.setCashDirection(m.get("CASHDIRECTION"));
+            rowInfo.setOr(m.get("OR"));
+            rowInfo.setPartyName(m.get("PARTYNAME"));
+            List<PageV2VO.ColumnInfo> columnInfos = new ArrayList<>();
+            JSONArray columnJsonArr = JSONArray.parseArray(JSONObject.toJSONString(m.get("R")));
+            columnJsonArr.forEach(obj -> {
+                JSONObject json = (JSONObject) obj;
+                PageV2VO.ColumnInfo columnInfo = new PageV2VO.ColumnInfo();
+                columnInfo.setCode(json.getString("NAME"));
+                columnInfo.setName(json.getString("#text"));
+                columnInfos.add(columnInfo);
+            });
+            rowInfo.setColumnInfos(columnInfos);
+            return rowInfo;
+        }).collect(Collectors.toList());
+
+        return PageV2VO.of(queryDTO.getAPage(),
+                20,
+                Long.parseLong(JsonPath.read(responseStr, "$.Data.rt.RE.RM")),
+                Integer.parseInt(JsonPath.read(responseStr, "$.Data.rt.RE.TotalPage")),
+                dataList,
+                columns.stream().map(this::mapToColumnInfo).collect(Collectors.toList()),
+                groups.stream().map(this::mapToColumnInfo).collect(Collectors.toList()),
+                customGroups.stream().map(this::mapToColumnInfo).collect(Collectors.toList()));
+    }
+
+    @Override
+    public AuditTaskNodeVO mobileSingleTaskNodeTree(AuditTaskNodeDTO queryDTO) {
+        // 获取用户代码
+        UserLoginVO userLoginVO = CookieUtil.getUserInfoFromCookie();
+        if (Objects.isNull(userLoginVO)) {
+            throw new BusinessException(-1, "用户登录过期");
+        }
+        Map<String, Object> webApiParam = new HashMap<>();
+        webApiParam.put("aUserCode", userLoginVO.getUserCode());
+        webApiParam.put("aTaskId", queryDTO.getTid());
+        String responseStr = webApiClient.postApi(WebApiEnum.API_MOBILESINGLETASKNODETREE.getEndPoint(), webApiParam);
+
+        // 提取根T节点
+        Map<String, Object> rootT = JsonPath.read(responseStr, "$.Data.rt.T");
+        return this.convertNode(rootT);
+    }
+
+    @Override
+    public List<AuditTaskLogV2VO> mobileSingleTraceLog(AuditTaskLogV2DTO queryDTO) {
+        // 获取用户代码
+        UserLoginVO userLoginVO = CookieUtil.getUserInfoFromCookie();
+        if (Objects.isNull(userLoginVO)) {
+            throw new BusinessException(-1, "用户登录过期");
+        }
+        Map<String, Object> webApiParam = new HashMap<>();
+        webApiParam.put("aUserCode", userLoginVO.getUserCode());
+        webApiParam.put("aTaskId", queryDTO.getTid());
+        String responseStr = webApiClient.postApi(WebApiEnum.API_MOBILESINGLETRACELOG.getEndPoint(), webApiParam);
+
+        List<Map<String, String>> responseList = JsonPath.read(responseStr, "$.Data.rt.TL");
+        return responseList.stream().map(m -> {
+            AuditTaskLogV2VO vo = new AuditTaskLogV2VO();
+            vo.setTi(m.get("TI"));
+            vo.setLy(m.get("LY"));
+            vo.setNa(m.get("NA"));
+            vo.setOn(m.get("ON"));
+            vo.setRn(m.get("RN"));
+            vo.setSn(m.get("SN"));
+            vo.setAn(m.get("AN"));
+            vo.setOt(m.get("OT"));
+            vo.setOe(m.get("OE"));
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BizValidVO> mobileSingleLimitresult(BizValidDTO queryDTO) {
+        // 获取用户代码
+        UserLoginVO userLoginVO = CookieUtil.getUserInfoFromCookie();
+        if (Objects.isNull(userLoginVO)) {
+            throw new BusinessException(-1, "用户登录过期");
+        }
+        Map<String, Object> webApiParam = new HashMap<>();
+        webApiParam.put("aUserCode", userLoginVO.getUserCode());
+        webApiParam.put("aTaskId", queryDTO.getATaskId());
+        webApiParam.put("aIsIncludeConfirmed", queryDTO.getAIsIncludeConfirmed());
+        webApiParam.put("aIsIncludeOrdered", queryDTO.getAIsIncludeOrdered());
+        String responseStr = webApiClient.postApi(WebApiEnum.API_MOBILESINGLELIMITRESULT.getEndPoint(), webApiParam);
+        List<Map<String, String>> responseList = JsonPath.read(responseStr, "$.Data.rt.L");
+        return responseList.stream().map(m -> {
+            BizValidVO vo = new BizValidVO();
+            vo.setNa(m.get("NA"));
+            vo.setTy(m.get("TY"));
+            vo.setBf(m.get("BF"));
+            vo.setAf(m.get("AF"));
+            vo.setDf(m.get("DF"));
+            vo.setCa(m.get("CA"));
+            vo.setLe(m.get("LE"));
+            vo.setSid(m.get("SID"));
+            vo.setMe(m.get("ME"));
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public void mobileApproveTaskByNodeIdBatch(ApprovedBatchDTO approvedBatchDTO) {
+        // 获取用户代码
+        UserLoginVO userLoginVO = CookieUtil.getUserInfoFromCookie();
+        if (Objects.isNull(userLoginVO)) {
+            throw new BusinessException(-1, "用户登录过期");
+        }
+        Map<String, Object> webApiParam = new HashMap<>();
+        webApiParam.put("aUserCode", userLoginVO.getUserCode());
+        webApiParam.put("aNodeIds", approvedBatchDTO.getANodeIds());
+        webApiParam.put("targetType", approvedBatchDTO.getTargetType());
+        webApiParam.put("aAction", approvedBatchDTO.getAAction());
+        webApiParam.put("actionNote", approvedBatchDTO.getActionNote());
+        webApiParam.put("aCCRoles", approvedBatchDTO.getACCRoles());
+        webApiParam.put("aDataTypeCurrent", approvedBatchDTO.getADataTypeCurrent());
+
+        webApiClient.postApi(WebApiEnum.API_MOBILEAPPROVETASKBYNODEID_BATCH.getEndPoint(), webApiParam);
+    }
+
+    @Override
+    public List<TaskNodeGroupVO> mobileGetTaskNodeGroup(TaskNodeGroupDTO queryDTO) {
+        // 获取用户代码
+        UserLoginVO userLoginVO = CookieUtil.getUserInfoFromCookie();
+        if (Objects.isNull(userLoginVO)) {
+            throw new BusinessException(-1, "用户登录过期");
+        }
+        Map<String, Object> webApiPram = new HashMap<>();
+        webApiPram.put("aUserCode", userLoginVO.getUserCode());
+        Optional.ofNullable(queryDTO.getATargetType()).ifPresent(v -> webApiPram.put("aTargetType", v));
+        Optional.ofNullable(queryDTO.getADataType()).ifPresent(v -> webApiPram.put("aDataType", v));
+        webApiPram.put("aBegdate", queryDTO.getABegdate());
+        webApiPram.put("aEnddate", queryDTO.getAEnddate());
+        // 开始日期默认是当前日期往前14天;结束日期默认是当期日期往后1天
+        if (StrUtil.hasBlank(queryDTO.getABegdate(), queryDTO.getAEnddate())) {
+            LocalDate today = LocalDate.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            if (StrUtil.isBlank(queryDTO.getABegdate())) {
+                webApiPram.put("aBegdate", today.minusDays(14).format(formatter));
+            }
+            if (StrUtil.isBlank(queryDTO.getAEnddate())) {
+                webApiPram.put("aEnddate", today.plusDays(1).format(formatter));
+            }
+        }
+        String responseStr = webApiClient.postApi(WebApiEnum.API_MOBILEGETTASKNODEGROUP.getEndPoint(), webApiPram);
+
+        List<Map<String, String>> responseList = JsonPath.read(responseStr, "$.Data.rt.G");
+
+        return responseList.stream().map(m -> {
+            TaskNodeGroupVO vo = new TaskNodeGroupVO();
+            vo.setC(m.get("C"));
+            vo.setP(m.get("P"));
+            vo.setCt(m.get("CT"));
+            vo.setM(m.get("M"));
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 递归转换单个节点
+     */
+    private AuditTaskNodeVO convertNode(Map<String, Object> nodeMap) {
+
+        AuditTaskNodeVO node = new AuditTaskNodeVO();
+        node.setId((String) nodeMap.get("ID"));
+        node.setTx((String) nodeMap.get("TX"));
+        node.setVa((String) nodeMap.get("VA"));
+        node.setIn((String) nodeMap.get("IN"));
+        node.setTy((String) nodeMap.get("TY"));
+        node.setLe((String) nodeMap.get("LE"));
+        node.setLc((String) nodeMap.get("IC"));
+
+        // 处理子节点
+        Object children = nodeMap.get("T");
+        if (children != null) {
+            if (children instanceof List) {
+                // 多个子节点的情况
+                List<Map<String, Object>> childList = (List<Map<String, Object>>) children;
+                List<AuditTaskNodeVO> childNodes = new ArrayList<>();
+                for (Map<String, Object> childMap : childList) {
+                    childNodes.add(convertNode(childMap));
+                }
+                node.setChildNodes(childNodes);
+            } else if (children instanceof Map) {
+                // 单个子节点的情况
+                Map<String, Object> childMap = (Map<String, Object>) children;
+                List<AuditTaskNodeVO> childNodes = new ArrayList<>();
+                childNodes.add(convertNode(childMap));
+                node.setChildNodes(childNodes);
+            }
+        }
+
+        return node;
+    }
+
+    /**
+     * 组装审批数据分页查询条件
+     *
+     * @param queryDTO
+     * @return
+     */
+    private Map<String, Object> buildMobileGetTaskNodeLstByPageParam(AuditTaskPageDTO queryDTO) {
+        Map<String, Object> webApiPram = new HashMap<>();
+        webApiPram.put("aPage", queryDTO.getAPage());
+        Optional.ofNullable(queryDTO.getATargetType()).ifPresent(v -> webApiPram.put("aTargetType", v));
+        Optional.ofNullable(queryDTO.getADataType()).ifPresent(v -> webApiPram.put("aDataType", v));
+        Optional.ofNullable(queryDTO.getAGroupCode()).ifPresent(v -> webApiPram.put("aGroupCode", v));
+        webApiPram.put("aBegdate", queryDTO.getABegdate());
+        webApiPram.put("aEnddate", queryDTO.getAEnddate());
+        // 开始日期默认是当前日期往前14天;结束日期默认是当期日期往后1天
+        if (StrUtil.hasBlank(queryDTO.getABegdate(), queryDTO.getAEnddate())) {
+            LocalDate today = LocalDate.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            if (StrUtil.isBlank(queryDTO.getABegdate())) {
+                webApiPram.put("aBegdate", today.minusDays(14).format(formatter));
+            }
+            if (StrUtil.isBlank(queryDTO.getAEnddate())) {
+                webApiPram.put("aEnddate", today.plusDays(1).format(formatter));
+            }
+        }
+        return webApiPram;
+    }
+
+    /**
+     * 将单个Map转换为ColumnInfo对象
+     */
+    private PageV2VO.ColumnInfo mapToColumnInfo(Map<String, String> columnMap) {
+        PageV2VO.ColumnInfo columnInfo = new PageV2VO.ColumnInfo();
+        columnInfo.setCode(columnMap.get("NAME"));
+        columnInfo.setName(columnMap.get("#text"));
+        return columnInfo;
     }
 
 }

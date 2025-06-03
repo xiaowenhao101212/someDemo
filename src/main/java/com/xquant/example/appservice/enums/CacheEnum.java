@@ -12,7 +12,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum CacheEnum {
 
-    USER_SESSION("user:session", "用户认证信息");
+    USER_SESSION("user:session", "用户认证信息"),
+    AUDIT_TASK_PAGE("user:page", "审批信息分页");
 
     private final String code;
 
