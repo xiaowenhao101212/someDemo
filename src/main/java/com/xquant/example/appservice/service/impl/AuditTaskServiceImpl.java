@@ -178,7 +178,13 @@ public class AuditTaskServiceImpl implements AuditTaskService {
         // 获取用户代码
         UserLoginVO userLoginVO = CookieUtil.getUserInfoFromCookie();
         if (Objects.isNull(userLoginVO)) {
-            throw new BusinessException(-1, "用户登录过期");
+            if (!StrUtil.hasBlank(queryDTO.getAuthToken(), queryDTO.getUserCode())) {
+                userLoginVO = new UserLoginVO();
+                userLoginVO.setAuthToken(queryDTO.getAuthToken());
+                userLoginVO.setUserCode(queryDTO.getUserCode());
+            } else {
+                throw new BusinessException(-1, "用户登录过期");
+            }
         }
         // 检查缓存中是否存在数据
         String cacheKey = String.format("%s:%s:%s:%s:%s:%s:%s",

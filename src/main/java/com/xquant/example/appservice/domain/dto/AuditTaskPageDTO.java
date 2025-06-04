@@ -34,4 +34,10 @@ public class AuditTaskPageDTO implements Serializable {
 
     @ApiModelProperty(value = "审批单分组编号", example = "0")
     private Integer aGroupCode;
+
+    @ApiModelProperty(value = "用户编号", hidden = true)
+    private String userCode;
+
+    @ApiModelProperty(value = "认证token", hidden = true)
+    private String authToken;
 }

@@ -81,6 +81,12 @@ logging:
     root: INFO
 
 app:
+  app-demo-thread-pool:
+    core-pool-size: 5
+    max-pool-size: 10
+    keep-alive-time: 15
+    queue-capacity: 50
+    rejected-execution-handler: abort-policy
   web-api-ip: http://172.19.4.87:9000/API/service
   auth:
     token-name: authToken
