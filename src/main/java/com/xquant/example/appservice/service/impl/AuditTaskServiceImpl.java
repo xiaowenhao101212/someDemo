@@ -50,6 +50,7 @@ public class AuditTaskServiceImpl implements AuditTaskService {
     private final AuditTaskMapper auditTaskMapper;
     private final AuditTaskLogMapper auditTaskLogMapper;
     private final WebApiClient webApiClient;
+    private final RedisTemplate<String, String> redisTemplate;
 
 
     @Override
@@ -182,7 +183,7 @@ public class AuditTaskServiceImpl implements AuditTaskService {
             throw new BusinessException(-1, "用户登录过期");
         }
         // 检查缓存中是否存在数据
-        String cacheKey = String.format("user:%s:%s:%s:%s:%s:%s:%s",
+        String cacheKey = String.format("%s:%s:%s:%s:%s:%s:%s",
                 userLoginVO.getAuthToken(),
                 queryDTO.getAPage(),
                 queryDTO.getATargetType(),
@@ -191,17 +192,16 @@ public class AuditTaskServiceImpl implements AuditTaskService {
                 queryDTO.getADataType(),
                 queryDTO.getAGroupCode());
 
-        cacheKey = MD5.create().digestHex16(cacheKey);
-
-        RMapCache<String, PageV2VO<AuditTaskPageVO>> pageCache = redissonClient.getMapCache(CacheEnum.AUDIT_TASK_PAGE.getCode());
-        PageV2VO<AuditTaskPageVO> cachePageDate = pageCache.get(cacheKey);
-        if (Objects.nonNull(cachePageDate)) {
-            return cachePageDate;
+        cacheKey = CacheEnum.AUDIT_TASK_PAGE.getCode() + ":" + MD5.create().digestHex16(cacheKey);
+        String cacheDateStr = redisTemplate.opsForValue().get(cacheKey);
+        // 如果有缓存则直接返回
+        if (StrUtil.isNotBlank(cacheDateStr)) {
+            log.info("从缓存中获取数据，key:[{}]", cacheKey);
+            return JSONObject.parseObject(cacheDateStr, PageV2VO.class);
         }
 
         Map<String, Object> webApiPram = this.buildMobileGetTaskNodeLstByPageParam(queryDTO);
         webApiPram.put("aUserCode", userLoginVO.getUserCode());
-
 
         String responseStr = webApiClient.postApi(WebApiEnum.API_MOBILEGETTASKNODELSTBYPAGE.getEndPoint(), webApiPram);
 
