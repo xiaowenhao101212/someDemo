@@ -4,12 +4,12 @@ server:
 spring:
   # 链路追踪配置
   sleuth:
-    # 是否开启链路追踪
     enabled: true
-    # 采样配置
     sampler:
-      # 采样比例
       probability: 1.0
+      #未在本地部署zipkin服务
+#    zipkin:
+#      base-url: http://localhost:9411
   application:
     name: app-service
   redis:
