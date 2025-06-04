@@ -2,14 +2,14 @@
 server:
   port: 8072
 spring:
+  zipkin:
+    # 本地未部署zipkin客戶端服務
+    enabled: false
   # 链路追踪配置
   sleuth:
     enabled: true
     sampler:
       probability: 1.0
-      #未在本地部署zipkin服务
-#    zipkin:
-#      base-url: http://localhost:9411
   application:
     name: app-service
   redis:
