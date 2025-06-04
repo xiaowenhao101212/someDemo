@@ -1,7 +1,8 @@
-package com.xquant.example.appservice.controller.response;
+package com.xquant.example.appservice.controller;
 
 
 import com.xquant.example.appservice.annotation.PreventDuplicateClick;
+import com.xquant.example.appservice.controller.response.ResponseModel;
 import com.xquant.example.appservice.domain.dto.*;
 import com.xquant.example.appservice.domain.page.PageV2VO;
 import com.xquant.example.appservice.domain.vo.*;
@@ -63,12 +64,10 @@ public class AuditTaskV2Controller {
     @ApiOperation("批量审批操作")
     @PostMapping("/approvedBatch")
     @PreventDuplicateClick()
-    public ResponseModel<?> approvedBatch(@RequestBody @Valid ApprovedBatchDTO approvedBatchDTO) throws InterruptedException {
-        Thread.sleep(10000);
+    public ResponseModel<?> approvedBatch(@RequestBody @Valid ApprovedBatchDTO approvedBatchDTO) {
         auditTaskService.mobileApproveTaskByNodeIdBatch(approvedBatchDTO);
         return ResponseModel.ok();
     }
-
 
 
     @ApiOperation("查询审批数据分组信息")

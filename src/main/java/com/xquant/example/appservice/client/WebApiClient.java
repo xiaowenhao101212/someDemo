@@ -64,11 +64,13 @@ public class WebApiClient {
             }
             int webResponseStatus = JsonPath.read(response.getBody(), "$.Status_code");
             if (webResponseStatus != 1) {
-                throw new BusinessException(-1, String.format("服务[%s]响应码[%s]异常，msg:[%s]", fullUrl, webResponseStatus, JsonPath.read(response.getBody(), "$.Msg")));
+                log.error("服务[{}]响应码[{}]异常，msg:[{}]", fullUrl, webResponseStatus, JsonPath.read(response.getBody(), "$.Msg"));
+                throw new BusinessException(-1, JsonPath.read(response.getBody(), "$.Msg"));
             }
             String status = JsonPath.read(response.getBody(), "$.Data.rt.RE.RC");
             if (!StrUtil.equals(status, "0")) {
-                throw new BusinessException(-1, String.format("接口[%s]响应码[%s]异常，msg:[%s]", fullUrl, status, JsonPath.read(response.getBody(), "$.Data.rt.RE.RM")));
+                log.error("接口[{}]响应码[{}]异常，msg:[{}]", fullUrl, status, JsonPath.read(response.getBody(), "$.Data.rt.RE.RM"));
+                throw new BusinessException(-1, JsonPath.read(response.getBody(), "$.Data.rt.RE.RM"));
             }
 
             return response.getBody();

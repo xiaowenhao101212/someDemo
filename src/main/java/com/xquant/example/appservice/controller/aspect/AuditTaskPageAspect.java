@@ -38,7 +38,7 @@ public class AuditTaskPageAspect {
     private final RedisTemplate<String, String> redisTemplate;
     private final ExecutorService executorService;
 
-    @AfterReturning(pointcut = "execution(* com.xquant.example.appservice.controller.response.AuditTaskV2Controller.page(..))", returning = "result")
+    @AfterReturning(pointcut = "execution(* com.xquant.example.appservice.controller.AuditTaskV2Controller.page(..))", returning = "result")
     public void cacheNextPageData(JoinPoint joinPoint, ResponseModel<PageV2VO<AuditTaskPageVO>> result) {
         if (result != null && result.getData() != null) {
             // 获取用户信息

@@ -1,6 +1,7 @@
 package com.xquant.example.appservice.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
@@ -8,7 +9,9 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.page.PageMethod;
+import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import com.xquant.example.appservice.client.WebApiClient;
 import com.xquant.example.appservice.domain.dto.*;
 import com.xquant.example.appservice.domain.entity.AuditTask;
@@ -299,6 +302,10 @@ public class AuditTaskServiceImpl implements AuditTaskService {
         webApiParam.put("aTaskId", queryDTO.getTid());
         String responseStr = webApiClient.postApi(WebApiEnum.API_MOBILESINGLETRACELOG.getEndPoint(), webApiParam);
 
+        if(validEmpty(responseStr,"$.Data.rt.TL")){
+            return new ArrayList<>();
+        }
+
         List<Map<String, String>> responseList = JsonPath.read(responseStr, "$.Data.rt.TL");
         return responseList.stream().map(m -> {
             AuditTaskLogV2VO vo = new AuditTaskLogV2VO();
@@ -328,6 +335,11 @@ public class AuditTaskServiceImpl implements AuditTaskService {
         webApiParam.put("aIsIncludeConfirmed", queryDTO.getAIsIncludeConfirmed());
         webApiParam.put("aIsIncludeOrdered", queryDTO.getAIsIncludeOrdered());
         String responseStr = webApiClient.postApi(WebApiEnum.API_MOBILESINGLELIMITRESULT.getEndPoint(), webApiParam);
+
+        if (validEmpty(responseStr, "$.Data.rt.L")) {
+            return new ArrayList<>();
+        }
+
         List<Map<String, String>> responseList = JsonPath.read(responseStr, "$.Data.rt.L");
         return responseList.stream().map(m -> {
             BizValidVO vo = new BizValidVO();
@@ -388,6 +400,10 @@ public class AuditTaskServiceImpl implements AuditTaskService {
             }
         }
         String responseStr = webApiClient.postApi(WebApiEnum.API_MOBILEGETTASKNODEGROUP.getEndPoint(), webApiPram);
+
+        if (validEmpty(responseStr, "$.Data.rt.G")) {
+            return new ArrayList<>();
+        }
 
         List<Map<String, String>> responseList = JsonPath.read(responseStr, "$.Data.rt.G");
 
@@ -476,4 +492,10 @@ public class AuditTaskServiceImpl implements AuditTaskService {
         return columnInfo;
     }
 
+    private boolean validEmpty(String jsonStr, String predicate) {
+        return Objects.isNull(
+                JsonPath.using(Configuration.builder().options(Option.SUPPRESS_EXCEPTIONS).build())
+                        .parse(jsonStr)
+                        .read(predicate));
+    }
 }
