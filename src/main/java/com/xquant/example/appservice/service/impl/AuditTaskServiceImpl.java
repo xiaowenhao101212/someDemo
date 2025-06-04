@@ -27,8 +27,6 @@ import com.xquant.example.appservice.service.AuditTaskService;
 import com.xquant.example.appservice.util.CookieUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
